@@ -75,7 +75,6 @@ export function ClueForm() {
   const validate = (): string[] => {
     const errs: string[] = [];
     if (form.parts.length === 0) errs.push('Cal almenys una part de la pista.');
-    if (form.parts.some((p) => !p.text.trim())) errs.push('Totes les parts han de tenir text.');
     if (!form.answer.trim()) errs.push('La resposta no pot estar buida.');
     if (!/^[A-Z]+$/.test(form.answer)) errs.push('La resposta només pot contenir lletres (A-Z).');
     if (form.par < 1) errs.push('El par ha de ser com a mínim 1.');

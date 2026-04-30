@@ -40,7 +40,7 @@ export function computeParts(text: string, annotations: Annotation[]): CluePart[
     pos = ann.end;
   }
   if (pos < text.length) parts.push({ text: text.slice(pos), type: 'linking' });
-  return parts.filter((p) => p.text.length > 0);
+  return parts.filter((p) => p.text.trim().length > 0);
 }
 
 interface ClueEditorProps {
