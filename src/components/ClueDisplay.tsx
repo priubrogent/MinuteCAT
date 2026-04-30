@@ -13,21 +13,19 @@ export function ClueDisplay({ parts, answerLength, revealedHints }: ClueDisplayP
       <p className="clue-text">
         {parts.map((part, i) => {
           const isHighlighted = part.type !== 'linking' && revealedHints.has(part.type);
-          return (
+          return isHighlighted ? (
             <span
               key={i}
-              style={
-                isHighlighted
-                  ? {
-                      backgroundColor: HINT_COLORS[part.type as Exclude<PartType, 'linking'>],
-                      borderRadius: '3px',
-                      padding: '1px 3px',
-                    }
-                  : undefined
-              }
+              style={{
+                backgroundColor: HINT_COLORS[part.type as Exclude<PartType, 'linking'>],
+                borderRadius: '3px',
+                padding: '1px 3px',
+              }}
             >
               {part.text}
             </span>
+          ) : (
+            <span key={i}>{part.text}</span>
           );
         })}
         {' '}({answerLength})

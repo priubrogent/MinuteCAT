@@ -144,6 +144,7 @@
   color: var(--navy);
   margin: 0;
   font-weight: 600;
+  white-space: pre-wrap;
 }
 
 /* ── Letter boxes ────────────────────────────────────── */

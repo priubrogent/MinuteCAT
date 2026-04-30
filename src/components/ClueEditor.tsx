@@ -40,7 +40,7 @@ export function computeParts(text: string, annotations: Annotation[]): CluePart[
     pos = ann.end;
   }
   if (pos < text.length) parts.push({ text: text.slice(pos), type: 'linking' });
-  return parts.filter((p) => p.text.trim().length > 0);
+  return parts.filter((p) => p.text.length > 0);
 }
 
 interface ClueEditorProps {
@@ -148,21 +148,23 @@ export function ClueEditor({ initialParts = [], onChange, variant = 'app' }: Clu
         <div className="ce-preview-wrap">
           <span className="ce-preview-label">Previsualització</span>
           <div className="ce-preview">
-            {parts.map((p, i) => {
-              const color = p.type !== 'linking'
-                ? HINT_COLORS[p.type as keyof typeof HINT_COLORS]
-                : undefined;
-              return (
+            {parts.map((p, i) =>
+              p.type === 'linking' ? (
+                <span key={i}>{p.text}</span>
+              ) : (
                 <span
                   key={i}
                   className="ce-part"
-                  style={color ? { background: color, border: '1px solid rgba(44,74,101,0.12)' } : undefined}
+                  style={{
+                    background: HINT_COLORS[p.type as keyof typeof HINT_COLORS],
+                    border: '1px solid rgba(44,74,101,0.12)',
+                  }}
                   title={TYPE_OPTIONS.find((t) => t.value === p.type)?.label}
                 >
                   {p.text}
                 </span>
-              );
-            })}
+              )
+            )}
           </div>
 
           {annotations.length > 0 && (

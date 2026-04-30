@@ -110,6 +110,7 @@
   padding: 10px 14px;
   border-radius: 8px;
   min-height: 42px;
+  white-space: pre-wrap;
 }
 
 .clue-editor--app .ce-preview  { background: #F7FAFC; }
