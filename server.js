@@ -10,6 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // so clues survive redeploys. Falls back to local ./data in development.
 const DATA_DIR = process.env.DATA_DIR ?? path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'clues.json');
+const SHARED_FILE = path.join(DATA_DIR, 'shared.json');
 
 const PORT = process.env.PORT ?? 3001;
 
@@ -47,6 +48,26 @@ function writeClues(clues) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(clues, null, 2), 'utf-8');
 }
 
+function readShared() {
+  if (!fs.existsSync(SHARED_FILE)) return {};
+  try { return JSON.parse(fs.readFileSync(SHARED_FILE, 'utf-8')); } catch { return {}; }
+}
+
+function writeShared(data) {
+  if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(SHARED_FILE, JSON.stringify(data, null, 2), 'utf-8');
+}
+
+function generateShareCode() {
+  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  const shared = readShared();
+  let code;
+  do {
+    code = Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  } while (shared[code]);
+  return code;
+}
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -75,11 +96,28 @@ app.post('/api/clues/import', (req, res) => {
   res.json({ ok: true });
 });
 
+app.post('/api/shared', (req, res) => {
+  const { parts, answer, answerLength, par } = req.body;
+  if (!parts || !answer || !par) return res.status(400).json({ error: 'Missing fields' });
+  const code = generateShareCode();
+  const shared = readShared();
+  shared[code] = { parts, answer, answerLength, par, createdAt: new Date().toISOString() };
+  writeShared(shared);
+  res.json({ code });
+});
+
+app.get('/api/shared/:code', (req, res) => {
+  const shared = readShared();
+  const entry = shared[req.params.code];
+  if (!entry) return res.status(404).json({ error: 'Not found' });
+  res.json(entry);
+});
+
 // In production, serve the Vite build and handle SPA routing
 if (process.env.NODE_ENV === 'production') {
   const distPath = path.join(__dirname, 'dist');
   app.use(express.static(distPath));
-  app.get('*', (_req, res) => {
+  app.get(/.*/, (_req, res) => {
     res.sendFile(path.join(distPath, 'index.html'));
   });
 }

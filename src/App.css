@@ -409,6 +409,47 @@
   font-size: 17px;
 }
 
+/* ── Crear buttons ───────────────────────────────────── */
+
+/* Small pill in the header */
+.btn-crear-header {
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.45);
+  border: 1.5px solid rgba(44, 74, 101, 0.28);
+  border-radius: var(--radius-btn);
+  font-size: 12px;
+  font-weight: 700;
+  font-style: italic;
+  cursor: pointer;
+  color: var(--navy);
+  white-space: nowrap;
+  transition: background 0.12s;
+}
+
+.btn-crear-header:hover {
+  background: rgba(255, 255, 255, 0.70);
+}
+
+/* Secondary button inside the success card */
+.btn-crear-card {
+  margin-top: 10px;
+  padding: 10px 32px;
+  background: none;
+  border: 1.5px solid var(--navy-35);
+  border-radius: var(--radius-btn);
+  font-size: 15px;
+  font-weight: 700;
+  font-style: italic;
+  cursor: pointer;
+  color: var(--muted);
+  transition: color 0.12s, border-color 0.12s;
+}
+
+.btn-crear-card:hover {
+  color: var(--navy);
+  border-color: var(--navy);
+}
+
 /* ── Hint menu ───────────────────────────────────────── */
 
 .hint-overlay {

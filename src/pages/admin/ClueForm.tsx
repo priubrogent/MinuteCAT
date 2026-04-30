@@ -24,7 +24,6 @@ interface FormState {
   par: number;
   date: string;
   dateLabel: string;
-  solvers: number;
 }
 
 const DEFAULT_FORM: FormState = {
@@ -33,7 +32,6 @@ const DEFAULT_FORM: FormState = {
   par: 3,
   date: '',
   dateLabel: '',
-  solvers: 0,
 };
 
 export function ClueForm() {
@@ -58,7 +56,6 @@ export function ClueForm() {
           par: existing.par,
           date: existing.date,
           dateLabel: existing.dateLabel,
-          solvers: existing.solvers,
         });
       }
       setLoading(false);
@@ -131,7 +128,7 @@ export function ClueForm() {
       par: form.par,
       date: form.date,
       dateLabel: form.dateLabel,
-      solvers: form.solvers,
+      solvers: 0,
     }).then(() => navigate('/admin'));
   };
 
@@ -257,16 +254,6 @@ export function ClueForm() {
                 max={20}
                 value={form.par}
                 onChange={(e) => setForm((prev) => ({ ...prev, par: Number(e.target.value) }))}
-              />
-            </div>
-            <div className="admin-field admin-field--sm">
-              <label className="admin-label">Participants</label>
-              <input
-                className="admin-input"
-                type="number"
-                min={0}
-                value={form.solvers}
-                onChange={(e) => setForm((prev) => ({ ...prev, solvers: Number(e.target.value) }))}
               />
             </div>
           </div>

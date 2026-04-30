@@ -1,4 +1,4 @@
-import type { ClueData } from '../types';
+import type { ClueData, CluePart } from '../types';
 
 const SOLVED_PREFIX = 'minutecat:solved:';
 const ADMIN_AUTH_KEY = 'minutecat:admin:auth';
@@ -37,6 +37,41 @@ export async function removeClue(id: string): Promise<void> {
 export async function exportCluesJson(): Promise<string> {
   const clues = await getClues();
   return JSON.stringify(clues, null, 2);
+}
+
+export interface SharedCluePayload {
+  parts: CluePart[];
+  answer: string;
+  answerLength: number;
+  par: number;
+}
+
+export async function createSharedClue(payload: SharedCluePayload): Promise<string> {
+  const res = await fetch('/api/shared', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error('Failed to create shared clue');
+  const { code } = await res.json();
+  return code as string;
+}
+
+export async function getSharedClue(code: string): Promise<ClueData | null> {
+  const res = await fetch(`/api/shared/${code}`);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Failed to fetch shared clue');
+  const data = await res.json();
+  return {
+    id: code,
+    parts: data.parts,
+    answer: data.answer,
+    answerLength: data.answerLength,
+    par: data.par,
+    solvers: 0,
+    date: '',
+    dateLabel: 'Pista compartida',
+  };
 }
 
 export async function importCluesJson(json: string): Promise<void> {

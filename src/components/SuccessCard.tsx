@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface SuccessCardProps {
   hintsUsed: number;
@@ -8,6 +9,7 @@ interface SuccessCardProps {
 }
 
 export function SuccessCard({ hintsUsed, totalHints, par, shareText }: SuccessCardProps) {
+  const navigate = useNavigate();
   const [copied, setCopied] = useState(false);
 
   const diff = par - hintsUsed;
@@ -39,6 +41,9 @@ export function SuccessCard({ hintsUsed, totalHints, par, shareText }: SuccessCa
       <p className="success-par">{parText}</p>
       <button type="button" className="btn-share" onClick={handleShare}>
         {copied ? 'copiat!' : 'comparteix'}
+      </button>
+      <button type="button" className="btn-crear-card" onClick={() => navigate('/crear')}>
+        crea la teva pista
       </button>
     </div>
   );

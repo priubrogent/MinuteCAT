@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ClueDisplay } from '../components/ClueDisplay';
 import { LetterBoxes } from '../components/LetterBoxes';
 import { HintBubbles } from '../components/HintBubbles';
@@ -28,6 +29,7 @@ function buildShareText(clue: ClueData, hintsUsed: number, totalHints: number): 
 }
 
 function NoClueView() {
+  const navigate = useNavigate();
   return (
     <div className="app">
       <header className="app-header">
@@ -35,6 +37,9 @@ function NoClueView() {
           <div className="header-date">Minut Críptic</div>
           <div className="header-author">endevinalla críptica diària</div>
         </div>
+        <button type="button" className="btn-crear-header" onClick={() => navigate('/crear')}>
+          crea una pista
+        </button>
       </header>
       <main className="app-main" style={{ justifyContent: 'center', paddingBottom: '40px' }}>
         <div className="clue-card" style={{ textAlign: 'center' }}>
@@ -51,7 +56,8 @@ function NoClueView() {
 }
 
 // Rendered only once clue is guaranteed non-null
-function ActiveGame({ clue }: { clue: ClueData }) {
+export function ActiveGame({ clue, shareUrl }: { clue: ClueData; shareUrl?: string }) {
+  const navigate = useNavigate();
   const existingRecord = getSolvedRecord(clue.id);
   const alreadySolved = existingRecord !== null;
 
@@ -156,22 +162,20 @@ function ActiveGame({ clue }: { clue: ClueData }) {
     if (!revealedLetterIndices.has(index)) setActiveIndex(index);
   };
 
-  const shareText = buildShareText(clue, hintsUsed, totalHints);
+  const shareText = shareUrl
+    ? `Minut Críptic – Pista compartida\n${clue.parts.map(p => p.text).join('').trim()} (${clue.answerLength})\n${'🟣'.repeat(totalHints)}\n${shareUrl}`
+    : buildShareText(clue, hintsUsed, totalHints);
 
   return (
     <div className="app">
       <header className="app-header">
-        <button type="button" className="header-btn-back" aria-label="Enrere">&#8592;</button>
         <div className="header-info">
           <div className="header-date">{clue.dateLabel}</div>
-          <div className="header-author">De membre: Exemple</div>
+          <div className="header-author">Minut Críptic</div>
         </div>
-        <div className="header-actions">
-          <button type="button" className="header-btn-icon" aria-label="Informació">&#9432;</button>
-          <button type="button" className="header-btn-icon" aria-label="Menú">
-            <span className="menu-icon">&#9776;</span>
-          </button>
-        </div>
+        <button type="button" className="btn-crear-header" onClick={() => navigate('/crear')}>
+          crea una pista
+        </button>
       </header>
 
       <main className="app-main">
@@ -233,6 +237,7 @@ function ActiveGame({ clue }: { clue: ClueData }) {
 }
 
 export function GamePage() {
+  const navigate = useNavigate();
   const [clue, setClue] = useState<ClueData | null | undefined>(undefined);
 
   useEffect(() => {
@@ -247,6 +252,9 @@ export function GamePage() {
           <div className="header-info">
             <div className="header-date">Minut Críptic</div>
           </div>
+          <button type="button" className="btn-crear-header" onClick={() => navigate('/crear')}>
+            crea una pista
+          </button>
         </header>
         <main className="app-main" style={{ justifyContent: 'center' }}>
           <p style={{ color: 'var(--muted)' }}>Carregant…</p>
