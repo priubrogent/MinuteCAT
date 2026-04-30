@@ -39,6 +39,10 @@ export async function exportCluesJson(): Promise<string> {
   return JSON.stringify(clues, null, 2);
 }
 
+// ---------------------------------------------------------------------------
+// Shared clues — encoded entirely in the URL (no server storage needed)
+// ---------------------------------------------------------------------------
+
 export interface SharedCluePayload {
   parts: CluePart[];
   answer: string;
@@ -46,32 +50,34 @@ export interface SharedCluePayload {
   par: number;
 }
 
-export async function createSharedClue(payload: SharedCluePayload): Promise<string> {
-  const res = await fetch('/api/shared', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) throw new Error('Failed to create shared clue');
-  const { code } = await res.json();
-  return code as string;
+export function encodeSharedClue(payload: SharedCluePayload): string {
+  const json = JSON.stringify(payload);
+  const bytes = new TextEncoder().encode(json);
+  let binary = '';
+  bytes.forEach((b) => (binary += String.fromCharCode(b)));
+  // base64url (no padding, URL-safe chars)
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
 }
 
-export async function getSharedClue(code: string): Promise<ClueData | null> {
-  const res = await fetch(`/api/shared/${code}`);
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error('Failed to fetch shared clue');
-  const data = await res.json();
-  return {
-    id: code,
-    parts: data.parts,
-    answer: data.answer,
-    answerLength: data.answerLength,
-    par: data.par,
-    solvers: 0,
-    date: '',
-    dateLabel: 'Pista compartida',
-  };
+export function decodeSharedClue(encoded: string): ClueData | null {
+  try {
+    const base64 = encoded.replace(/-/g, '+').replace(/_/g, '/');
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length).map((_, i) => binary.charCodeAt(i));
+    const payload = JSON.parse(new TextDecoder().decode(bytes)) as SharedCluePayload;
+    return {
+      id: encoded,
+      parts: payload.parts,
+      answer: payload.answer,
+      answerLength: payload.answerLength,
+      par: payload.par,
+      solvers: 0,
+      date: '',
+      dateLabel: 'Pista compartida',
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function importCluesJson(json: string): Promise<void> {

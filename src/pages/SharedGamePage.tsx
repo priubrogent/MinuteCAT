@@ -1,35 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { ActiveGame } from './GamePage';
-import { getSharedClue } from '../store/clueStore';
-import type { ClueData } from '../types';
+import { decodeSharedClue } from '../store/clueStore';
 import '../App.css';
 
 export function SharedGamePage() {
   const { code } = useParams<{ code: string }>();
-  const [clue, setClue] = useState<ClueData | null | undefined>(undefined);
 
-  useEffect(() => {
-    if (!code) { setClue(null); return; }
-    getSharedClue(code).then(setClue).catch(() => setClue(null));
-  }, [code]);
+  const clue = useMemo(
+    () => (code ? decodeSharedClue(code) : null),
+    [code],
+  );
 
-  const shareUrl = code ? `${window.location.origin}${window.location.pathname.replace(/\/?$/, '')}#/p/${code}` : undefined;
-
-  if (clue === undefined) {
-    return (
-      <div className="app">
-        <header className="app-header">
-          <div className="header-info">
-            <div className="header-date">Minut Críptic</div>
-          </div>
-        </header>
-        <main className="app-main" style={{ justifyContent: 'center' }}>
-          <p style={{ color: 'var(--muted)' }}>Carregant…</p>
-        </main>
-      </div>
-    );
-  }
+  const shareUrl = code ? `${window.location.origin}/#/p/${code}` : undefined;
 
   if (!clue) {
     return (
@@ -46,7 +29,7 @@ export function SharedGamePage() {
               Pista no trobada.
             </p>
             <p style={{ fontSize: '14px', color: 'var(--muted)', marginTop: '8px', marginBottom: 0 }}>
-              L'enllaç pot ser incorrecte o ha expirat.
+              L'enllaç pot ser incorrecte o no és vàlid.
             </p>
           </div>
         </main>

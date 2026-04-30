@@ -126,4 +126,5 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server → http://localhost:${PORT}`);
   console.log(`Data   → ${DATA_FILE}`);
   console.log(`Mode   → ${process.env.NODE_ENV ?? 'development'}`);
+  console.log(`DATA_DIR env set: ${Boolean(process.env.DATA_DIR)} (${process.env.DATA_DIR ?? 'not set — data lives in container, will reset on redeploy!'})`);
 });

@@ -1,22 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import type { CluePart, PartType } from '../../types';
+import type { CluePart } from '../../types';
 import { getClues, upsertClue, generateId, generateDateLabel } from '../../store/clueStore';
+import { ClueEditor } from '../../components/ClueEditor';
 import './admin.css';
-
-const PART_TYPES: { value: PartType; label: string }[] = [
-  { value: 'linking', label: 'Nexe' },
-  { value: 'fodder', label: 'Material' },
-  { value: 'indicator', label: 'Indicador' },
-  { value: 'definition', label: 'Definició' },
-];
-
-const TYPE_COLORS: Record<PartType, string> = {
-  linking: '#E8EDF2',
-  fodder: '#FDE8A0',
-  indicator: '#FBCDD8',
-  definition: '#D5C0FF',
-};
 
 interface FormState {
   parts: CluePart[];
@@ -27,7 +14,7 @@ interface FormState {
 }
 
 const DEFAULT_FORM: FormState = {
-  parts: [{ text: '', type: 'linking' }],
+  parts: [],
   answer: '',
   par: 3,
   date: '',
@@ -43,6 +30,8 @@ export function ClueForm() {
   const [existingId, setExistingId] = useState<string | undefined>(undefined);
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [errors, setErrors] = useState<string[]>([]);
+  // Key used to reset ClueEditor when loaded data arrives
+  const [editorKey, setEditorKey] = useState(0);
 
   useEffect(() => {
     if (!isEdit || !id) return;
@@ -57,6 +46,7 @@ export function ClueForm() {
           date: existing.date,
           dateLabel: existing.dateLabel,
         });
+        setEditorKey((k) => k + 1); // force ClueEditor to reinitialize
       }
       setLoading(false);
     });
@@ -65,37 +55,13 @@ export function ClueForm() {
   if (loading) {
     return (
       <div className="admin-wrap">
-        <p style={{ padding: '2rem', color: 'var(--muted)' }}>Carregant…</p>
+        <p style={{ padding: '2rem', color: '#6B8BA5' }}>Carregant…</p>
       </div>
     );
   }
 
-  const updatePart = (i: number, field: 'text' | 'type', value: string) => {
-    setForm((prev) => {
-      const parts = [...prev.parts];
-      parts[i] = { ...parts[i], [field]: field === 'type' ? (value as PartType) : value };
-      return { ...prev, parts };
-    });
-  };
-
-  const addPart = () =>
-    setForm((prev) => ({ ...prev, parts: [...prev.parts, { text: '', type: 'linking' }] }));
-
-  const removePart = (i: number) =>
-    setForm((prev) => ({ ...prev, parts: prev.parts.filter((_, idx) => idx !== i) }));
-
-  const movePart = (i: number, dir: -1 | 1) => {
-    setForm((prev) => {
-      const parts = [...prev.parts];
-      const j = i + dir;
-      if (j < 0 || j >= parts.length) return prev;
-      [parts[i], parts[j]] = [parts[j], parts[i]];
-      return { ...prev, parts };
-    });
-  };
-
   const handleAnswerChange = (val: string) => {
-    setForm((prev) => ({ ...prev, answer: val.toUpperCase() }));
+    setForm((prev) => ({ ...prev, answer: val.toUpperCase().replace(/[^A-Z]/g, '') }));
   };
 
   const handleDateChange = (val: string) => {
@@ -146,89 +112,21 @@ export function ClueForm() {
 
       <div className="admin-form">
 
-        {/* Parts editor */}
+        {/* Clue text editor */}
         <section className="admin-form-section">
-          <h2 className="admin-form-section-title">Parts de la pista</h2>
+          <h2 className="admin-form-section-title">Text de la pista</h2>
           <p className="admin-form-hint">
-            Divideix el text de la pista en segments i assigna'ls un rol.
+            Escriu la pista i selecciona fragments per assignar-los un tipus.
           </p>
-
-          <div className="parts-list">
-            {form.parts.map((part, i) => (
-              <div key={i} className="part-row">
-                <div
-                  className="part-type-dot"
-                  style={{ background: TYPE_COLORS[part.type] }}
-                  title={PART_TYPES.find((t) => t.value === part.type)?.label}
-                />
-                <select
-                  className="admin-select part-type-select"
-                  value={part.type}
-                  onChange={(e) => updatePart(i, 'type', e.target.value)}
-                >
-                  {PART_TYPES.map((t) => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-                <input
-                  className="admin-input part-text-input"
-                  value={part.text}
-                  onChange={(e) => updatePart(i, 'text', e.target.value)}
-                  placeholder="text del segment…"
-                />
-                <div className="part-move-btns">
-                  <button
-                    type="button"
-                    className="part-move-btn"
-                    onClick={() => movePart(i, -1)}
-                    disabled={i === 0}
-                    title="Mou amunt"
-                  >↑</button>
-                  <button
-                    type="button"
-                    className="part-move-btn"
-                    onClick={() => movePart(i, 1)}
-                    disabled={i === form.parts.length - 1}
-                    title="Mou avall"
-                  >↓</button>
-                </div>
-                <button
-                  type="button"
-                  className="part-remove-btn"
-                  onClick={() => removePart(i)}
-                  disabled={form.parts.length <= 1}
-                  title="Elimina"
-                >✕</button>
-              </div>
-            ))}
-          </div>
-
-          <button type="button" className="admin-btn admin-btn--ghost admin-btn--sm" onClick={addPart}>
-            + Afegir segment
-          </button>
-
-          {form.parts.length > 0 && (
-            <div className="parts-preview">
-              <span className="parts-preview-label">Previsualització:</span>{' '}
-              {form.parts.map((p, i) => (
-                <span
-                  key={i}
-                  style={{
-                    background: TYPE_COLORS[p.type],
-                    padding: '1px 4px',
-                    borderRadius: '4px',
-                    fontSize: '15px',
-                    fontWeight: 600,
-                  }}
-                >
-                  {p.text || '…'}
-                </span>
-              ))}
-            </div>
-          )}
+          <ClueEditor
+            key={editorKey}
+            initialParts={form.parts}
+            onChange={(parts) => setForm((prev) => ({ ...prev, parts }))}
+            variant="admin"
+          />
         </section>
 
-        {/* Answer */}
+        {/* Answer & par */}
         <section className="admin-form-section">
           <h2 className="admin-form-section-title">Resposta</h2>
           <div className="admin-field-row">

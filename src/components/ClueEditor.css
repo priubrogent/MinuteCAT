@@ -1,0 +1,166 @@
+.clue-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ── Textarea ── */
+
+.ce-textarea {
+  width: 100%;
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  box-sizing: border-box;
+  line-height: 1.6;
+  transition: border-color 0.15s;
+}
+
+.clue-editor--app .ce-textarea {
+  border: 1.5px solid rgba(44, 74, 101, 0.35);
+  color: #2C4A65;
+  background: #F7FAFC;
+}
+.clue-editor--app .ce-textarea:focus {
+  border-color: #2C4A65;
+  background: #fff;
+}
+.clue-editor--app .ce-textarea::placeholder { color: #6B8BA5; font-weight: 500; }
+
+.clue-editor--admin .ce-textarea {
+  border: 1.5px solid #DDE4EC;
+  color: #2C4A65;
+  background: #fff;
+  font-size: 15px;
+}
+.clue-editor--admin .ce-textarea:focus { border-color: #2C4A65; }
+.clue-editor--admin .ce-textarea::placeholder { color: #6B8BA5; font-weight: 500; }
+
+/* ── Type assignment row ── */
+
+.ce-assign-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ce-assign-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6B8BA5;
+}
+
+.ce-type-buttons {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.ce-type-btn {
+  padding: 6px 14px;
+  border: 1.5px solid rgba(44, 74, 101, 0.18);
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: default;
+  color: #2C4A65;
+  opacity: 0.4;
+  transition: opacity 0.12s, box-shadow 0.10s, transform 0.07s;
+}
+
+.ce-type-btn--active {
+  cursor: pointer;
+  opacity: 1;
+  box-shadow: 0 2px 0 rgba(44, 74, 101, 0.22);
+}
+
+.ce-type-btn--active:active {
+  box-shadow: none;
+  transform: translateY(2px);
+}
+
+/* ── Preview ── */
+
+.ce-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ce-preview-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6B8BA5;
+}
+
+.ce-preview {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2C4A65;
+  line-height: 2;
+  padding: 10px 14px;
+  border-radius: 8px;
+  min-height: 42px;
+}
+
+.clue-editor--app .ce-preview  { background: #F7FAFC; }
+.clue-editor--admin .ce-preview { background: #F8FAFC; font-size: 15px; }
+
+.ce-part {
+  border-radius: 4px;
+  padding: 1px 3px;
+}
+
+/* ── Annotation list ── */
+
+.ce-ann-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ce-ann-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #2C4A65;
+}
+
+.ce-ann-swatch {
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  border: 1px solid rgba(44, 74, 101, 0.14);
+}
+
+.ce-ann-text {
+  flex: 1;
+  font-weight: 600;
+}
+
+.ce-ann-remove {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #6B8BA5;
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+.ce-ann-remove:hover {
+  background: #F0F4F8;
+  color: #2C4A65;
+}

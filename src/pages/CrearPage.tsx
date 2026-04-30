@@ -1,104 +1,37 @@
-import { useState, useRef } from 'react';
-import type { PartType, CluePart } from '../types';
-import { HINT_COLORS } from '../types';
-import { createSharedClue } from '../store/clueStore';
+import { useState } from 'react';
+import { ClueEditor } from '../components/ClueEditor';
+import type { CluePart } from '../types';
+import { encodeSharedClue } from '../store/clueStore';
 import '../App.css';
 import './crear.css';
 
-const TYPE_OPTIONS: { value: PartType; label: string; color: string }[] = [
-  { value: 'linking',    label: 'Nexe',      color: '#E8EDF2' },
-  { value: 'indicator',  label: 'Indicador',  color: HINT_COLORS.indicator },
-  { value: 'fodder',     label: 'Material',   color: HINT_COLORS.fodder },
-  { value: 'definition', label: 'Definició',  color: HINT_COLORS.definition },
-];
-
-interface Annotation {
-  start: number;
-  end: number;
-  type: PartType;
-}
-
-function computeParts(text: string, annotations: Annotation[]): CluePart[] {
-  if (!text) return [];
-  const sorted = [...annotations].sort((a, b) => a.start - b.start);
-  const parts: CluePart[] = [];
-  let pos = 0;
-  for (const ann of sorted) {
-    if (ann.start > pos) parts.push({ text: text.slice(pos, ann.start), type: 'linking' });
-    parts.push({ text: text.slice(ann.start, ann.end), type: ann.type });
-    pos = ann.end;
-  }
-  if (pos < text.length) parts.push({ text: text.slice(pos), type: 'linking' });
-  return parts.filter((p) => p.text.length > 0);
-}
-
 export function CrearPage() {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const [clueText, setClueText] = useState('');
-  const [annotations, setAnnotations] = useState<Annotation[]>([]);
-  const [selection, setSelection] = useState<{ start: number; end: number } | null>(null);
+  const [parts, setParts] = useState<CluePart[]>([]);
   const [answer, setAnswer] = useState('');
   const [par, setPar] = useState(3);
-  const [shareCode, setShareCode] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<string[]>([]);
   const [copied, setCopied] = useState(false);
 
-  const handleTextChange = (val: string) => {
-    setClueText(val);
-    // Drop annotations that fall outside the new text length
-    setAnnotations((prev) => prev.filter((a) => a.end <= val.length));
-    setSelection(null);
-    setShareCode(null);
-  };
+  const fullText = parts.map((p) => p.text).join('');
 
-  const detectSelection = () => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const s = ta.selectionStart;
-    const e = ta.selectionEnd;
-    setSelection(s !== e ? { start: s, end: e } : null);
-  };
-
-  const assignType = (type: PartType) => {
-    if (!selection) return;
-    const { start, end } = selection;
-    setAnnotations((prev) => [
-      ...prev.filter((a) => a.end <= start || a.start >= end),
-      { start, end, type },
-    ]);
-    setSelection(null);
-    setShareCode(null);
-  };
-
-  const parts = computeParts(clueText, annotations);
-
-  const handleCreate = async () => {
+  const handleCreate = () => {
     const errs: string[] = [];
-    if (!clueText.trim()) errs.push('Escriu el text de la pista.');
+    if (!fullText.trim()) errs.push('Escriu el text de la pista.');
     if (!answer.trim()) errs.push('La resposta no pot estar buida.');
     if (answer && !/^[A-Z]+$/.test(answer)) errs.push('La resposta només pot contenir lletres (A-Z).');
     if (par < 1) errs.push('El par ha de ser com a mínim 1.');
     if (errs.length) { setErrors(errs); return; }
     setErrors([]);
-    setLoading(true);
-    try {
-      const code = await createSharedClue({
-        parts: parts.length > 0 ? parts : [{ text: clueText, type: 'linking' }],
-        answer,
-        answerLength: answer.length,
-        par,
-      });
-      setShareCode(code);
-    } catch {
-      setErrors(['Error en crear la pista. Torna-ho a intentar.']);
-    }
-    setLoading(false);
-  };
 
-  const shareUrl = shareCode
-    ? `${window.location.origin}${window.location.pathname}#/p/${shareCode}`
-    : null;
+    const encoded = encodeSharedClue({
+      parts: parts.length > 0 ? parts : [{ text: fullText, type: 'linking' }],
+      answer,
+      answerLength: answer.length,
+      par,
+    });
+    setShareUrl(`${window.location.origin}/#/p/${encoded}`);
+  };
 
   const handleCopy = () => {
     if (!shareUrl) return;
@@ -120,100 +53,16 @@ export function CrearPage() {
       <main className="app-main crear-main">
         <div className="crear-card">
 
-          {/* 1 – Write the clue */}
+          {/* Clue text editor */}
           <section className="crear-section">
             <label className="crear-label">Text de la pista</label>
-            <textarea
-              ref={textareaRef}
-              className="crear-textarea"
-              value={clueText}
-              onChange={(e) => handleTextChange(e.target.value)}
-              onSelect={detectSelection}
-              onMouseUp={detectSelection}
-              onKeyUp={detectSelection}
-              placeholder="Escriu la pista críptica aquí…"
-              rows={3}
+            <ClueEditor
+              onChange={(p) => { setParts(p); setShareUrl(null); }}
+              variant="app"
             />
           </section>
 
-          {/* 2 – Assign types to selections */}
-          {clueText.length > 0 && (
-            <section className="crear-section">
-              <label className="crear-label">
-                {selection
-                  ? `Assigna un tipus al text seleccionat`
-                  : 'Selecciona un fragment per assignar-li un tipus'}
-              </label>
-              <div className="type-buttons">
-                {TYPE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    className={`type-btn${selection ? ' type-btn--active' : ''}`}
-                    style={{ background: opt.color }}
-                    onClick={() => assignType(opt.value)}
-                    disabled={!selection}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* 3 – Preview with annotations */}
-          {clueText.length > 0 && (
-            <section className="crear-section">
-              <label className="crear-label">Previsualització</label>
-              <div className="crear-preview">
-                {parts.map((p, i) => {
-                  const color =
-                    p.type !== 'linking' ? HINT_COLORS[p.type as keyof typeof HINT_COLORS] : undefined;
-                  return (
-                    <span
-                      key={i}
-                      className="crear-part-chip"
-                      style={color ? { background: color, border: '1px solid rgba(44,74,101,0.12)' } : undefined}
-                      title={TYPE_OPTIONS.find((t) => t.value === p.type)?.label}
-                    >
-                      {p.text}
-                    </span>
-                  );
-                })}
-              </div>
-
-              {annotations.length > 0 && (
-                <div className="annotation-list">
-                  {[...annotations]
-                    .sort((a, b) => a.start - b.start)
-                    .map((ann) => {
-                      const opt = TYPE_OPTIONS.find((t) => t.value === ann.type)!;
-                      return (
-                        <div key={`${ann.start}-${ann.end}`} className="annotation-item">
-                          <span className="annotation-swatch" style={{ background: opt.color }} />
-                          <span className="annotation-text">
-                            "{clueText.slice(ann.start, ann.end)}" → {opt.label}
-                          </span>
-                          <button
-                            type="button"
-                            className="annotation-remove"
-                            onClick={() =>
-                              setAnnotations((prev) =>
-                                prev.filter((a) => !(a.start === ann.start && a.end === ann.end))
-                              )
-                            }
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      );
-                    })}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* 4 – Answer & par */}
+          {/* Answer & par */}
           <section className="crear-section">
             <div className="crear-field-row">
               <div className="crear-field">
@@ -255,14 +104,9 @@ export function CrearPage() {
           )}
 
           {/* Create button */}
-          {!shareCode && (
-            <button
-              type="button"
-              className="btn-create"
-              onClick={handleCreate}
-              disabled={loading}
-            >
-              {loading ? 'Creant…' : 'Crea i comparteix'}
+          {!shareUrl && (
+            <button type="button" className="btn-create" onClick={handleCreate}>
+              Crea i comparteix
             </button>
           )}
 
