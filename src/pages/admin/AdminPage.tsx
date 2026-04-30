@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { ClueData } from '../../types';
 import {
@@ -58,41 +58,49 @@ function clueStatus(clue: ClueData): { label: string; cls: string } {
 
 function Dashboard() {
   const navigate = useNavigate();
-  const [clues, setClues] = useState<ClueData[]>(() =>
-    [...getClues()].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
-  );
+  const [clues, setClues] = useState<ClueData[]>([]);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [importError, setImportError] = useState('');
   const [showImport, setShowImport] = useState(false);
   const [importText, setImportText] = useState('');
 
-  const refresh = () =>
-    setClues([...getClues()].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')));
+  const loadClues = () => {
+    getClues().then((c) =>
+      setClues([...c].sort((a, b) => (a.date ?? '').localeCompare(b.date ?? '')))
+    );
+  };
+
+  useEffect(() => { loadClues(); }, []);
 
   const handleDelete = (id: string) => {
-    removeClue(id);
-    setDeleteConfirm(null);
-    refresh();
+    removeClue(id).then(() => {
+      setDeleteConfirm(null);
+      loadClues();
+    });
   };
 
   const handleExport = () => {
-    const json = exportCluesJson();
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'minutecat-clues.json';
-    a.click();
-    URL.revokeObjectURL(url);
+    exportCluesJson().then((json) => {
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'minutecat-clues.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
   };
 
   const handleImport = () => {
     try {
-      importCluesJson(importText);
-      refresh();
-      setShowImport(false);
-      setImportText('');
-      setImportError('');
+      importCluesJson(importText)
+        .then(() => {
+          loadClues();
+          setShowImport(false);
+          setImportText('');
+          setImportError('');
+        })
+        .catch(() => setImportError('Error al importar'));
     } catch {
       setImportError('JSON invàlid');
     }

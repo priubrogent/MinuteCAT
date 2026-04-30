@@ -1,47 +1,57 @@
 import type { ClueData } from '../types';
 
-const CLUES_KEY = 'minutecat:clues';
 const SOLVED_PREFIX = 'minutecat:solved:';
 const ADMIN_AUTH_KEY = 'minutecat:admin:auth';
 const ADMIN_PASSWORD = 'minutecat';
 
-const SEED_CLUES: ClueData[] = [
-  {
-    id: 'seed-1',
-    parts: [
-      { text: 'Al ', type: 'linking' },
-      { text: 'cabirolet', type: 'fodder' },
-      { text: " s'", type: 'linking' },
-      { text: 'amaga', type: 'indicator' },
-      { text: ' la ', type: 'linking' },
-      { text: 'primavera', type: 'definition' },
-    ],
-    answerLength: 5,
-    answer: 'ABRIL',
-    par: 3,
-    solvers: 12480,
-    date: '2026-04-17',
-    dateLabel: "17 d'abril de 2026",
-  },
-];
+// ---------------------------------------------------------------------------
+// Clue API (shared backend)
+// ---------------------------------------------------------------------------
 
-export function getClues(): ClueData[] {
-  const raw = localStorage.getItem(CLUES_KEY);
-  if (!raw) {
-    localStorage.setItem(CLUES_KEY, JSON.stringify(SEED_CLUES));
-    return SEED_CLUES;
-  }
-  try { return JSON.parse(raw) as ClueData[]; } catch { return SEED_CLUES; }
+export async function getClues(): Promise<ClueData[]> {
+  const res = await fetch('/api/clues');
+  if (!res.ok) throw new Error('Failed to fetch clues');
+  return res.json();
 }
 
-export function saveClues(clues: ClueData[]): void {
-  localStorage.setItem(CLUES_KEY, JSON.stringify(clues));
-}
-
-export function getTodaysClue(): ClueData | null {
+export async function getTodaysClue(): Promise<ClueData | null> {
+  const clues = await getClues();
   const today = new Date().toISOString().slice(0, 10);
-  return getClues().find((c) => c.date === today) ?? null;
+  return clues.find((c) => c.date === today) ?? null;
 }
+
+export async function upsertClue(clue: ClueData): Promise<void> {
+  const res = await fetch(`/api/clues/${clue.id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(clue),
+  });
+  if (!res.ok) throw new Error('Failed to save clue');
+}
+
+export async function removeClue(id: string): Promise<void> {
+  const res = await fetch(`/api/clues/${id}`, { method: 'DELETE' });
+  if (!res.ok) throw new Error('Failed to delete clue');
+}
+
+export async function exportCluesJson(): Promise<string> {
+  const clues = await getClues();
+  return JSON.stringify(clues, null, 2);
+}
+
+export async function importCluesJson(json: string): Promise<void> {
+  const parsed = JSON.parse(json) as ClueData[];
+  const res = await fetch('/api/clues/import', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(parsed),
+  });
+  if (!res.ok) throw new Error('Failed to import clues');
+}
+
+// ---------------------------------------------------------------------------
+// Solved records (kept in localStorage — per user, not shared)
+// ---------------------------------------------------------------------------
 
 export interface SolvedRecord {
   hintsUsed: number;
@@ -60,30 +70,9 @@ export function saveSolvedRecord(clueId: string, hintsUsed: number): void {
   );
 }
 
-export function upsertClue(clue: ClueData): void {
-  const clues = getClues();
-  const idx = clues.findIndex((c) => c.id === clue.id);
-  if (idx >= 0) clues[idx] = clue;
-  else clues.push(clue);
-  saveClues(clues);
-}
-
-export function removeClue(id: string): void {
-  saveClues(getClues().filter((c) => c.id !== id));
-}
-
-export function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
-}
-
-export function exportCluesJson(): string {
-  return JSON.stringify(getClues(), null, 2);
-}
-
-export function importCluesJson(json: string): void {
-  const parsed = JSON.parse(json) as ClueData[];
-  saveClues(parsed);
-}
+// ---------------------------------------------------------------------------
+// Admin auth (session-only, no sharing needed)
+// ---------------------------------------------------------------------------
 
 export function checkAdminAuth(): boolean {
   return sessionStorage.getItem(ADMIN_AUTH_KEY) === 'ok';
@@ -99,6 +88,14 @@ export function adminLogin(password: string): boolean {
 
 export function adminLogout(): void {
   sessionStorage.removeItem(ADMIN_AUTH_KEY);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+export function generateId(): string {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 }
 
 export function generateDateLabel(isoDate: string): string {

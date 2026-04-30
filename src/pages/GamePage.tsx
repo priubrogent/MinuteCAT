@@ -50,20 +50,19 @@ function NoClueView() {
   );
 }
 
-export function GamePage() {
-  const clue = getTodaysClue();
-  const existingRecord = clue ? getSolvedRecord(clue.id) : null;
+// Rendered only once clue is guaranteed non-null
+function ActiveGame({ clue }: { clue: ClueData }) {
+  const existingRecord = getSolvedRecord(clue.id);
   const alreadySolved = existingRecord !== null;
 
   const [letters, setLetters] = useState<string[]>(() => {
-    if (!clue) return [];
     if (alreadySolved) return clue.answer.split('');
     return Array(clue.answerLength).fill('');
   });
   const [activeIndex, setActiveIndex] = useState(0);
   const [revealedParts, setRevealedParts] = useState<Set<PartType>>(new Set());
   const [revealedLetterIndices, setRevealedLetterIndices] = useState<Set<number>>(() => {
-    if (alreadySolved && clue) {
+    if (alreadySolved) {
       return new Set(Array.from({ length: clue.answerLength }, (_, i) => i));
     }
     return new Set();
@@ -73,8 +72,6 @@ export function GamePage() {
   const [usedHintTypes, setUsedHintTypes] = useState<Set<HintType>>(new Set());
   const [solved, setSolved] = useState(alreadySolved);
   const [shaking, setShaking] = useState(false);
-
-  if (!clue) return <NoClueView />;
 
   const totalHints = 3 + clue.answerLength;
   const noLettersLeft = revealedLetterIndices.size >= clue.answerLength;
@@ -233,4 +230,31 @@ export function GamePage() {
       )}
     </div>
   );
+}
+
+export function GamePage() {
+  const [clue, setClue] = useState<ClueData | null | undefined>(undefined);
+
+  useEffect(() => {
+    getTodaysClue().then(setClue).catch(() => setClue(null));
+  }, []);
+
+  if (clue === undefined) {
+    // Loading
+    return (
+      <div className="app">
+        <header className="app-header">
+          <div className="header-info">
+            <div className="header-date">Minut Críptic</div>
+          </div>
+        </header>
+        <main className="app-main" style={{ justifyContent: 'center' }}>
+          <p style={{ color: 'var(--muted)' }}>Carregant…</p>
+        </main>
+      </div>
+    );
+  }
+
+  if (!clue) return <NoClueView />;
+  return <ActiveGame clue={clue} />;
 }

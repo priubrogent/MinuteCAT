@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { CluePart, PartType } from '../../types';
 import { getClues, upsertClue, generateId, generateDateLabel } from '../../store/clueStore';
@@ -27,23 +27,51 @@ interface FormState {
   solvers: number;
 }
 
+const DEFAULT_FORM: FormState = {
+  parts: [{ text: '', type: 'linking' }],
+  answer: '',
+  par: 3,
+  date: '',
+  dateLabel: '',
+  solvers: 0,
+};
+
 export function ClueForm() {
   const { id } = useParams<{ id?: string }>();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
 
-  const existing = isEdit ? getClues().find((c) => c.id === id) : null;
-
-  const [form, setForm] = useState<FormState>(() => ({
-    parts: existing?.parts ?? [{ text: '', type: 'linking' }],
-    answer: existing?.answer ?? '',
-    par: existing?.par ?? 3,
-    date: existing?.date ?? '',
-    dateLabel: existing?.dateLabel ?? '',
-    solvers: existing?.solvers ?? 0,
-  }));
-
+  const [loading, setLoading] = useState(isEdit);
+  const [existingId, setExistingId] = useState<string | undefined>(undefined);
+  const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [errors, setErrors] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!isEdit || !id) return;
+    getClues().then((clues) => {
+      const existing = clues.find((c) => c.id === id);
+      if (existing) {
+        setExistingId(existing.id);
+        setForm({
+          parts: existing.parts,
+          answer: existing.answer,
+          par: existing.par,
+          date: existing.date,
+          dateLabel: existing.dateLabel,
+          solvers: existing.solvers,
+        });
+      }
+      setLoading(false);
+    });
+  }, [id, isEdit]);
+
+  if (loading) {
+    return (
+      <div className="admin-wrap">
+        <p style={{ padding: '2rem', color: 'var(--muted)' }}>Carregant…</p>
+      </div>
+    );
+  }
 
   const updatePart = (i: number, field: 'text' | 'type', value: string) => {
     setForm((prev) => {
@@ -70,7 +98,7 @@ export function ClueForm() {
   };
 
   const handleAnswerChange = (val: string) => {
-    setForm((prev) => ({ ...prev, answer: val.toUpperCase(), }));
+    setForm((prev) => ({ ...prev, answer: val.toUpperCase() }));
   };
 
   const handleDateChange = (val: string) => {
@@ -96,7 +124,7 @@ export function ClueForm() {
     if (errs.length) { setErrors(errs); return; }
 
     upsertClue({
-      id: existing?.id ?? generateId(),
+      id: existingId ?? generateId(),
       parts: form.parts,
       answer: form.answer,
       answerLength: form.answer.length,
@@ -104,8 +132,7 @@ export function ClueForm() {
       date: form.date,
       dateLabel: form.dateLabel,
       solvers: form.solvers,
-    });
-    navigate('/admin');
+    }).then(() => navigate('/admin'));
   };
 
   return (
