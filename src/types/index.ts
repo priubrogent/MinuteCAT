@@ -15,6 +15,7 @@ export interface ClueData {
   solvers: number;
   date: string;   // ISO date: "2026-03-05"
   dateLabel: string; // "5 de març de 2026"
+  message?: string; // optional popup message shown when clue card is tapped
 }
 
 export const HINT_COLORS: Record<Exclude<PartType, 'linking'>, string> = {

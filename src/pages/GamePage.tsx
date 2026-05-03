@@ -183,6 +183,7 @@ export function ActiveGame({ clue, shareUrl }: { clue: ClueData; shareUrl?: stri
           parts={clue.parts}
           answerLength={clue.answerLength}
           revealedHints={revealedParts}
+          message={clue.message}
         />
 
         <LetterBoxes

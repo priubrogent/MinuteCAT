@@ -11,6 +11,7 @@ interface FormState {
   par: number;
   date: string;
   dateLabel: string;
+  message: string;
 }
 
 const DEFAULT_FORM: FormState = {
@@ -19,6 +20,7 @@ const DEFAULT_FORM: FormState = {
   par: 3,
   date: '',
   dateLabel: '',
+  message: '',
 };
 
 export function ClueForm() {
@@ -45,6 +47,7 @@ export function ClueForm() {
           par: existing.par,
           date: existing.date,
           dateLabel: existing.dateLabel,
+          message: existing.message ?? '',
         });
         setEditorKey((k) => k + 1); // force ClueEditor to reinitialize
       }
@@ -94,6 +97,7 @@ export function ClueForm() {
       date: form.date,
       dateLabel: form.dateLabel,
       solvers: 0,
+      ...(form.message.trim() ? { message: form.message.trim() } : {}),
     }).then(() => navigate('/admin'));
   };
 
@@ -178,6 +182,24 @@ export function ClueForm() {
                 placeholder="17 d'abril de 2026"
               />
             </div>
+          </div>
+        </section>
+
+        {/* Optional message */}
+        <section className="admin-form-section">
+          <h2 className="admin-form-section-title">Missatge (opcional)</h2>
+          <p className="admin-form-hint">
+            Si s'omple, apareixerà un popup quan l'usuari toqui la pista. Deixa-ho en blanc per no mostrar res.
+          </p>
+          <div className="admin-field">
+            <label className="admin-label">Missatge per a l'usuari</label>
+            <textarea
+              className="admin-textarea"
+              rows={3}
+              value={form.message}
+              onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))}
+              placeholder="Exemple: Avui la pista és especial perquè…"
+            />
           </div>
         </section>
 
