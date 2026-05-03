@@ -539,3 +539,21 @@
 }
 
 .muted { color: #6B8BA5; }
+
+/* ── Hint messages ────────────────────────────────────── */
+
+.admin-hint-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-hint-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+  border: 1px solid rgba(44, 74, 101, 0.15);
+}

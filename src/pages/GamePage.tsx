@@ -76,6 +76,7 @@ export function ActiveGame({ clue, shareUrl }: { clue: ClueData; shareUrl?: stri
   const [hintsUsed, setHintsUsed] = useState(() => existingRecord?.hintsUsed ?? 0);
   const [isHintMenuOpen, setIsHintMenuOpen] = useState(false);
   const [usedHintTypes, setUsedHintTypes] = useState<Set<HintType>>(new Set());
+  const [hintMessage, setHintMessage] = useState<string | null>(null);
   const [solved, setSolved] = useState(alreadySolved);
   const [shaking, setShaking] = useState(false);
 
@@ -153,6 +154,8 @@ export function ActiveGame({ clue, shareUrl }: { clue: ClueData; shareUrl?: stri
       setRevealedParts((prev) => new Set(prev).add(type as PartType));
       setUsedHintTypes((prev) => new Set(prev).add(type));
       setHintsUsed((h) => h + 1);
+      const msg = clue.messages?.[type as Exclude<typeof type, 'letter'>];
+      if (msg) setHintMessage(msg);
     }
 
     setIsHintMenuOpen(false);
@@ -183,7 +186,6 @@ export function ActiveGame({ clue, shareUrl }: { clue: ClueData; shareUrl?: stri
           parts={clue.parts}
           answerLength={clue.answerLength}
           revealedHints={revealedParts}
-          message={clue.message}
         />
 
         <LetterBoxes
@@ -232,6 +234,21 @@ export function ActiveGame({ clue, shareUrl }: { clue: ClueData; shareUrl?: stri
           usedHints={usedHintTypes}
           noLettersLeft={noLettersLeft}
         />
+      )}
+
+      {hintMessage && (
+        <div className="clue-msg-overlay" onClick={() => setHintMessage(null)}>
+          <div className="clue-msg-popup" onClick={(e) => e.stopPropagation()}>
+            <p className="clue-msg-text">{hintMessage}</p>
+            <button
+              type="button"
+              className="clue-msg-close"
+              onClick={() => setHintMessage(null)}
+            >
+              Tanca
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

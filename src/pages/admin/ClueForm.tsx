@@ -5,13 +5,19 @@ import { getClues, upsertClue, generateId, generateDateLabel } from '../../store
 import { ClueEditor } from '../../components/ClueEditor';
 import './admin.css';
 
+interface HintMessages {
+  indicator: string;
+  fodder: string;
+  definition: string;
+}
+
 interface FormState {
   parts: CluePart[];
   answer: string;
   par: number;
   date: string;
   dateLabel: string;
-  message: string;
+  hintMessages: HintMessages;
 }
 
 const DEFAULT_FORM: FormState = {
@@ -20,8 +26,14 @@ const DEFAULT_FORM: FormState = {
   par: 3,
   date: '',
   dateLabel: '',
-  message: '',
+  hintMessages: { indicator: '', fodder: '', definition: '' },
 };
+
+const HINT_FIELDS: { key: keyof HintMessages; label: string; color: string }[] = [
+  { key: 'indicator',  label: 'Indicador',  color: '#FBCDD8' },
+  { key: 'fodder',     label: 'Fodder',     color: '#FDE8A0' },
+  { key: 'definition', label: 'Definició',  color: '#D5C0FF' },
+];
 
 export function ClueForm() {
   const { id } = useParams<{ id?: string }>();
@@ -47,7 +59,11 @@ export function ClueForm() {
           par: existing.par,
           date: existing.date,
           dateLabel: existing.dateLabel,
-          message: existing.message ?? '',
+          hintMessages: {
+            indicator:  existing.messages?.indicator  ?? '',
+            fodder:     existing.messages?.fodder     ?? '',
+            definition: existing.messages?.definition ?? '',
+          },
         });
         setEditorKey((k) => k + 1); // force ClueEditor to reinitialize
       }
@@ -75,6 +91,13 @@ export function ClueForm() {
     }));
   };
 
+  const handleHintMessageChange = (key: keyof HintMessages, val: string) => {
+    setForm((prev) => ({
+      ...prev,
+      hintMessages: { ...prev.hintMessages, [key]: val },
+    }));
+  };
+
   const validate = (): string[] => {
     const errs: string[] = [];
     if (form.parts.length === 0) errs.push('Cal almenys una part de la pista.');
@@ -88,6 +111,12 @@ export function ClueForm() {
     const errs = validate();
     if (errs.length) { setErrors(errs); return; }
 
+    const messages: Record<string, string> = {};
+    for (const { key } of HINT_FIELDS) {
+      const val = form.hintMessages[key].trim();
+      if (val) messages[key] = val;
+    }
+
     upsertClue({
       id: existingId ?? generateId(),
       parts: form.parts,
@@ -97,7 +126,7 @@ export function ClueForm() {
       date: form.date,
       dateLabel: form.dateLabel,
       solvers: 0,
-      ...(form.message.trim() ? { message: form.message.trim() } : {}),
+      ...(Object.keys(messages).length ? { messages } : {}),
     }).then(() => navigate('/admin'));
   };
 
@@ -185,21 +214,28 @@ export function ClueForm() {
           </div>
         </section>
 
-        {/* Optional message */}
+        {/* Per-hint messages */}
         <section className="admin-form-section">
-          <h2 className="admin-form-section-title">Missatge (opcional)</h2>
+          <h2 className="admin-form-section-title">Missatges per pista (opcional)</h2>
           <p className="admin-form-hint">
-            Si s'omple, apareixerà un popup quan l'usuari toqui la pista. Deixa-ho en blanc per no mostrar res.
+            Si s'omple, apareixerà un popup quan l'usuari reveli aquella pista. Deixa en blanc per no mostrar res.
           </p>
-          <div className="admin-field">
-            <label className="admin-label">Missatge per a l'usuari</label>
-            <textarea
-              className="admin-textarea"
-              rows={3}
-              value={form.message}
-              onChange={(e) => setForm((prev) => ({ ...prev, message: e.target.value }))}
-              placeholder="Exemple: Avui la pista és especial perquè…"
-            />
+          <div className="admin-hint-messages">
+            {HINT_FIELDS.map(({ key, label, color }) => (
+              <div key={key} className="admin-field">
+                <label className="admin-label">
+                  <span className="admin-hint-dot" style={{ background: color }} />
+                  {label}
+                </label>
+                <textarea
+                  className="admin-textarea"
+                  rows={2}
+                  value={form.hintMessages[key]}
+                  onChange={(e) => handleHintMessageChange(key, e.target.value)}
+                  placeholder={`Missatge quan es revela l'${label.toLowerCase()}…`}
+                />
+              </div>
+            ))}
           </div>
         </section>
 
